@@ -6,9 +6,41 @@ VRChat 아바타 작업을 위한 유틸리티 도구 모음입니다.
 
 ### VCC (VRChat Creator Companion)를 통한 설치
 
-1. VCC에서 `Add Repository` 클릭
-2. 다음 URL 입력: `https://github.com/NAKZI-STAR/Avatar_Helpers.git`
-3. 프로젝트에 패키지 추가
+1. 아래 버튼을 클릭하거나 VCC에서 수동으로 추가하세요:
+
+   [![Add to VCC](https://img.shields.io/badge/Add%20to-VCC-blue?style=for-the-badge)](vcc://vpm/addRepo?url=https://nakzi-star.github.io/Avatar_Helpers/index.json)
+
+2. **수동 추가 방법:**
+   - VCC 상단 메뉴 → Settings → Packages → Add Repository
+   - 다음 URL 입력: `https://nakzi-star.github.io/Avatar_Helpers/index.json`
+   
+3. 프로젝트에서 "Manage Project" → "Nakzi Avatar Helper" 패키지 추가
+
+### UPM (Unity Package Manager)을 통한 설치
+
+#### 방법 1: Git URL로 추가
+1. Unity 메뉴 → **Window** → **Package Manager**
+2. 좌측 상단 **+** 버튼 → **Add package from git URL...**
+3. 다음 URL 입력:
+   ```
+   https://github.com/NAKZI-STAR/Avatar_Helpers.git?path=Assets/NakziAvatarScriptEdtion
+   ```
+
+#### 방법 2: manifest.json 직접 수정
+프로젝트의 `Packages/manifest.json` 파일에 다음을 추가:
+```json
+{
+  "dependencies": {
+    "com.nakzi.avatarhelper": "https://github.com/NAKZI-STAR/Avatar_Helpers.git?path=Assets/NakziAvatarScriptEdtion",
+    ...
+  }
+}
+```
+
+> 💡 **특정 버전 설치**: URL 끝에 `#v1.0.0` 형식으로 태그를 지정할 수 있습니다.
+> ```
+> https://github.com/NAKZI-STAR/Avatar_Helpers.git?path=Assets/NakziAvatarScriptEdtion#v1.0.0
+> ```
 
 ### 수동 설치
 

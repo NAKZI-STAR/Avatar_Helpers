@@ -16,25 +16,10 @@ internal sealed class AvatarNamingTool : EditorWindow
 
     [MenuItem("Nakzi Avatar Script/Avatar Naming Tool")]
     private static void Init()
-        => (GetWindow(typeof(AvatarNamingTool)) as AvatarNamingTool).Show();
+        => GetWindow<AvatarNamingTool>().Show();
 
     private void OnGUI()
     {
-        EditorGUILayout.LabelField("Avatar Naming Tool", EditorStyles.boldLabel);
-        EditorGUILayout.HelpBox("아바타 루트 오브젝트를 드래그해서 이름을 일괄 변경합니다.\n프리픽스/서픽스 추가 또는 문자열 치환이 가능합니다.", MessageType.Info);
-        EditorGUILayout.Space();
-
-        using (new EditorGUILayout.VerticalScope(GUI.skin.box))
-        {
-            _avatarRootObject = EditorGUILayout.ObjectField(
-                "Avatar Root GameObject",
-                _avatarRootObject,
-                typeof(GameObject),
-                true) as GameObject;
-        }
-
-        EditorGUILayout.Space();
-
         EditorGUILayout.LabelField("1. Prefix / Suffix 추가", EditorStyles.boldLabel);
 
         using (new GUILayout.VerticalScope(GUI.skin.box))
