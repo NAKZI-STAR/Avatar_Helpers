@@ -69,7 +69,7 @@ SkinnedMeshRenderer의 Anchor Override를 일괄 설정하는 도구입니다.
 ## 📋 요구 사항
 
 - Unity 2022.3 이상
-- VRChat Avatars SDK 3.7.0 이상
+- VRChat Avatars SDK 3.10.1 이상
 
 ## 📄 라이선스
 
