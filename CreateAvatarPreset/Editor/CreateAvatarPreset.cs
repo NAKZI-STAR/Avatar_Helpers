@@ -896,87 +896,58 @@ internal sealed class CreateAvatarPreset : EditorWindow
         }
     }
 
-    // VRCExpressionsMenu의 서브메뉴, 아이콘, Parameters 레퍼런스를 재연결
+    // VRCExpressionsMenu의 모든 ObjectReference를 재연결 (Iterator 방식)
     private void RemapExpressionsMenu(VRCExpressionsMenu menu, Dictionary<string, Object> clonedMap)
     {
         if (!menu) return;
 
-        bool modified = false;
         SerializedObject menuSO = new SerializedObject(menu);
+        bool modified = false;
 
-        // VRCExpressionsMenu의 Parameters 필드 재연결
-        SerializedProperty parametersProp = menuSO.FindProperty("Parameters");
-        
-        if (parametersProp != null)
+        // 복제된 VRCExpressionParameters 찾기
+        VRCExpressionParameters clonedParameters = null;
+        foreach (var pair in clonedMap)
         {
-            if (parametersProp.objectReferenceValue == null)
+            if (pair.Value is VRCExpressionParameters param)
             {
-                // Parameters가 null인 경우, clonedMap에서 VRCExpressionParameters를 찾아 할당
-                foreach (var pair in clonedMap)
-                {
-                    if (pair.Value is VRCExpressionParameters clonedParams)
-                    {
-                        parametersProp.objectReferenceValue = clonedParams;
-                        modified = true;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                string parametersPath = AssetDatabase.GetAssetPath(parametersProp.objectReferenceValue);
-                
-                if (!string.IsNullOrEmpty(parametersPath) && clonedMap.TryGetValue(parametersPath, out Object clonedParameters))
-                {
-                    parametersProp.objectReferenceValue = clonedParameters;
-                    modified = true;
-                }
-                else if (!string.IsNullOrEmpty(parametersPath))
-                {
-                    // clonedMap에 없으면 복제된 Parameters를 찾아서 할당
-                    foreach (var pair in clonedMap)
-                    {
-                        if (pair.Value is VRCExpressionParameters clonedParams)
-                        {
-                            parametersProp.objectReferenceValue = clonedParams;
-                            modified = true;
-                            break;
-                        }
-                    }
-                }
+                clonedParameters = param;
+                break;
             }
         }
 
-        // 각 컨트롤의 서브메뉴와 아이콘을 체크
-        if (menu.controls != null)
+        // Next(true)를 사용하여 숨겨진 필드까지 모두 순회
+        SerializedProperty iterator = menuSO.GetIterator();
+        bool enterChildren = true;
+        
+        while (iterator.Next(enterChildren))
         {
-            for (int i = 0; i < menu.controls.Count; i++)
+            enterChildren = true;
+            
+            if (iterator.propertyType != SerializedPropertyType.ObjectReference) continue;
+            
+            Object originalRef = iterator.objectReferenceValue;
+            
+            // Parameters 필드가 None인 경우에도 복제된 Parameters로 설정
+            if (originalRef == null)
             {
-                var control = menu.controls[i];
-
-                // 서브메뉴 재연결
-                if (control.subMenu)
+                // 필드 타입이 VRCExpressionParameters인 경우 복제된 것으로 설정
+                if (clonedParameters != null && 
+                    (iterator.name.Contains("arameter") || iterator.type.Contains("VRCExpressionParameters")))
                 {
-                    string subMenuPath = AssetDatabase.GetAssetPath(control.subMenu);
-                    if (!string.IsNullOrEmpty(subMenuPath) && clonedMap.TryGetValue(subMenuPath, out Object clonedSubMenu))
-                    {
-                        control.subMenu = clonedSubMenu as VRCExpressionsMenu;
-                        menu.controls[i] = control;
-                        modified = true;
-                    }
+                    iterator.objectReferenceValue = clonedParameters;
+                    modified = true;
+                    Debug.Log($"[CreateAvatarPreset] Set Parameters field '{iterator.name}' to cloned VRCExpressionParameters");
                 }
+                continue;
+            }
 
-                // 아이콘 재연결
-                if (control.icon)
-                {
-                    string iconPath = AssetDatabase.GetAssetPath(control.icon);
-                    if (!string.IsNullOrEmpty(iconPath) && clonedMap.TryGetValue(iconPath, out Object clonedIcon))
-                    {
-                        control.icon = clonedIcon as Texture2D;
-                        menu.controls[i] = control;
-                        modified = true;
-                    }
-                }
+            string originalPath = AssetDatabase.GetAssetPath(originalRef);
+            if (string.IsNullOrEmpty(originalPath)) continue;
+
+            if (clonedMap.TryGetValue(originalPath, out Object cloned))
+            {
+                iterator.objectReferenceValue = cloned;
+                modified = true;
             }
         }
 
