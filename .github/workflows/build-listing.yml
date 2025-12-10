@@ -32,18 +32,13 @@ jobs:
           echo "version=$(jq -r '.version' package.json)" >> $GITHUB_OUTPUT
           echo "package_json=$(cat package.json | jq -c '.')" >> $GITHUB_OUTPUT
 
-      - name: Get Latest Release Info
+      - name: Get Release Tag
         id: release
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          # Get the latest release tag
-          LATEST_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
-          if [ -z "$LATEST_TAG" ]; then
-            LATEST_TAG="v${{ steps.package.outputs.version }}"
-          fi
-          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-          echo "Latest tag: $LATEST_TAG"
+          # Use version from package.json to construct tag
+          TAG="v${{ steps.package.outputs.version }}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Using tag: $TAG"
 
       - name: Create Website Directory
         run: mkdir -p Website
