@@ -2,6 +2,15 @@
 
 이 프로젝트의 모든 주요 변경 사항이 이 파일에 기록됩니다.
 
+## [1.0.1] - 2024-12-11
+
+### 수정됨
+- **Create Avatar Preset**: VRCExpressionsMenu 참조 재연결 버그 수정
+  - SubMenu, Icon, Parameters 참조가 올바르게 복제된 에셋으로 연결되지 않던 문제 해결
+  - SerializedProperty Iterator를 사용한 안정적인 참조 재연결 구현
+
+---
+
 ## [1.0.0] - 2024-12-10
 
 ### 추가됨
