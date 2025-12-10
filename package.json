@@ -1,0 +1,30 @@
+{
+  "name": "com.nakzi.avatarhelper",
+  "displayName": "Nakzi Avatar Helper",
+  "version": "1.0.0",
+  "unity": "2022.3",
+  "description": "VRChat 아바타 작업을 위한 유틸리티 도구 모음입니다. 아바타 프리셋 생성, 앵커 오버라이드 설정, 오브젝트 네이밍 등의 기능을 제공합니다.",
+  "keywords": [
+    "vrchat",
+    "avatar",
+    "preset",
+    "utility",
+    "editor"
+  ],
+  "author": {
+    "name": "NAKZI-STAR",
+    "email": "icho117118@gmail.com",
+    "url": "https://github.com/NAKZI-STAR"
+  },
+  "vpmDependencies": {
+    "com.vrchat.avatars": "3.7.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NAKZI-STAR/Avatar_Helpers.git"
+  },
+  "hideInEditor": false,
+  "changelogUrl": "https://github.com/NAKZI-STAR/Avatar_Helpers/blob/main/Assets/NakziAvatarScriptEdtion/CHANGELOG.md"
+}
+
