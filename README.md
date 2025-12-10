@@ -20,7 +20,7 @@ VRChat 아바타 작업을 위한 유틸리티 도구 모음입니다.
 2. 좌측 상단 **+** 버튼 → **Add package from git URL...**
 3. 다음 URL 입력:
    ```
-   https://github.com/NAKZI-STAR/Avatar_Helpers.git?path=Assets/NakziAvatarScriptEdtion
+   https://github.com/NAKZI-STAR/Avatar_Helpers.git
    ```
 
 #### 방법 2: manifest.json 직접 수정
@@ -28,7 +28,7 @@ VRChat 아바타 작업을 위한 유틸리티 도구 모음입니다.
 ```json
 {
   "dependencies": {
-    "com.nakzi.avatarhelper": "https://github.com/NAKZI-STAR/Avatar_Helpers.git?path=Assets/NakziAvatarScriptEdtion",
+    "com.nakzi.avatarhelper": "https://github.com/NAKZI-STAR/Avatar_Helpers.git",
     ...
   }
 }
@@ -36,7 +36,7 @@ VRChat 아바타 작업을 위한 유틸리티 도구 모음입니다.
 
 > 💡 **특정 버전 설치**: URL 끝에 `#v1.0.0` 형식으로 태그를 지정할 수 있습니다.
 > ```
-> https://github.com/NAKZI-STAR/Avatar_Helpers.git?path=Assets/NakziAvatarScriptEdtion#v1.0.0
+> https://github.com/NAKZI-STAR/Avatar_Helpers.git#v1.0.0
 > ```
 
 ### 수동 설치
