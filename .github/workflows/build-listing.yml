@@ -8,13 +8,16 @@ on:
     types: [published, created, edited, unpublished, deleted, released]
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
 concurrency:
   group: "pages"
   cancel-in-progress: false
+
+env:
+  PKG_NAME: "com.nakzi.avatarhelper"
 
 jobs:
   build:
@@ -23,13 +26,84 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build Listing
-        uses: vrchat-community/package-list-action@v1
-        with:
-          path: source.json
-          pageUrl: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+      - name: Read package.json
+        id: package
+        run: |
+          echo "version=$(jq -r '.version' package.json)" >> $GITHUB_OUTPUT
+          echo "package_json=$(cat package.json | jq -c '.')" >> $GITHUB_OUTPUT
 
-      - name: Upload artifact
+      - name: Get Latest Release Info
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get the latest release tag
+          LATEST_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v${{ steps.package.outputs.version }}"
+          fi
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Create Website Directory
+        run: mkdir -p Website
+
+      - name: Generate index.json
+        run: |
+          VERSION="${{ steps.package.outputs.version }}"
+          TAG="${{ steps.release.outputs.tag }}"
+          REPO_OWNER="${{ github.repository_owner }}"
+          REPO_NAME="${{ github.event.repository.name }}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${PKG_NAME}-${VERSION}.zip"
+          
+          # Read package.json and add url field
+          PACKAGE_WITH_URL=$(cat package.json | jq --arg url "$DOWNLOAD_URL" '. + {url: $url}')
+          
+          # Create index.json
+          jq -n \
+            --arg name "NAKZI Avatar Helper" \
+            --arg id "com.nakzi.repos" \
+            --arg url "https://${REPO_OWNER}.github.io/${REPO_NAME}/index.json" \
+            --arg author "NAKZI-STAR" \
+            --arg pkgName "$PKG_NAME" \
+            --arg version "$VERSION" \
+            --argjson pkgJson "$PACKAGE_WITH_URL" \
+            '{
+              name: $name,
+              id: $id,
+              url: $url,
+              author: $author,
+              packages: {
+                ($pkgName): {
+                  versions: {
+                    ($version): $pkgJson
+                  }
+                }
+              }
+            }' > Website/index.json
+          
+          echo "Generated index.json:"
+          cat Website/index.json
+
+      - name: Create Package Zip
+        if: github.event_name == 'release'
+        run: |
+          VERSION="${{ steps.package.outputs.version }}"
+          ZIP_NAME="${PKG_NAME}-${VERSION}.zip"
+          zip -r "$ZIP_NAME" . -x ".git/*" -x ".github/*" -x "Website/*"
+          echo "Created $ZIP_NAME"
+
+      - name: Upload Zip to Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.package.outputs.version }}"
+          ZIP_NAME="${PKG_NAME}-${VERSION}.zip"
+          TAG="${{ steps.release.outputs.tag }}"
+          gh release upload "$TAG" "$ZIP_NAME" --clobber || true
+
+      - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: Website
