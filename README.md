@@ -4,17 +4,14 @@ VRChat 아바타 작업을 위한 유틸리티 도구 모음입니다.
 
 ## 📦 설치 방법
 
-### VCC (VRChat Creator Companion)를 통한 설치
+### VCC (VRChat Creator Companion)를 통한 설치 (권장)
 
-1. 아래 버튼을 클릭하거나 VCC에서 수동으로 추가하세요:
-
-   [![Add to VCC](https://img.shields.io/badge/Add%20to-VCC-blue?style=for-the-badge)](vcc://vpm/addRepo?url=https://nakzi-star.github.io/Avatar_Helpers/index.json)
-
-2. **수동 추가 방법:**
-   - VCC 상단 메뉴 → Settings → Packages → Add Repository
-   - 다음 URL 입력: `https://nakzi-star.github.io/Avatar_Helpers/index.json`
-   
-3. 프로젝트에서 "Manage Project" → "Nakzi Avatar Helper" 패키지 추가
+1. VCC 상단 메뉴 → **Settings** → **Packages** → **Add Repository**
+2. 다음 URL을 복사하여 입력:
+   ```
+   https://nakzi-star.github.io/Avatar_Helpers/index.json
+   ```
+3. 프로젝트에서 **Manage Project** → **Nakzi Avatar Helper** 패키지 추가
 
 ### UPM (Unity Package Manager)을 통한 설치
 
