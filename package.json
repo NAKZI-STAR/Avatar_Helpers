@@ -17,7 +17,7 @@
     "url": "https://github.com/NAKZI-STAR"
   },
   "vpmDependencies": {
-    "com.vrchat.avatars": "3.7.0"
+    "com.vrchat.avatars": "3.10.1"
   },
   "license": "MIT",
   "repository": {
