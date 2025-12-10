@@ -1,0 +1,46 @@
+name: Build Repo Listing
+
+on: 
+  workflow_dispatch:
+  push:
+    branches: [main]
+  release:
+    types: [published, created, edited, unpublished, deleted, released]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Listing
+        uses: vrchat-community/package-list-action@v1
+        with:
+          path: source.json
+          pageUrl: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: Website
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
