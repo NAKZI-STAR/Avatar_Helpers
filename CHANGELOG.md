@@ -25,5 +25,5 @@
 
 ### 의존성
 - Unity 2022.3 이상
-- VRChat Avatars SDK 3.7.0 이상
+- VRChat Avatars SDK 3.10.1 이상
 
