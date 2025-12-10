@@ -1,0 +1,16 @@
+{
+    "name": "AssemblyCreateAvatarPreset",
+    "rootNamespace": "",
+    "references": [
+        "GUID:cf5b0019e4edb134cbaa249036bbe15e"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
