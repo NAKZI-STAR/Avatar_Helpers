@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
+using NAKZI.AvatarPreset.Pipeline;
 using static NAKZI.EditorHelper.EditorHelper;
 
 internal sealed class CreateAvatarPreset : EditorWindow
@@ -50,6 +51,17 @@ internal sealed class CreateAvatarPreset : EditorWindow
     private readonly HashSet<string> _ignoredDependencyPaths = new();
     private bool _includeBuiltInAndPackages = false;
 
+    // 다중 선택 관련
+    private readonly HashSet<string> _multiSelectedPaths = new();
+    private int _lastClickedIndex = -1;
+    private List<string> _currentFilteredPaths = new();
+
+    // 작업 진행 상태
+    private bool _isProcessing = false;
+
+    // 다중 선택 스타일
+    private GUIStyle _multiSelectStyle = null;
+
     [MenuItem("Nakzi Avatar Script/Create Avatar Preset")]
     private static void Init()
     {
@@ -74,6 +86,14 @@ internal sealed class CreateAvatarPreset : EditorWindow
             _togglesBoxStyle = new(GUI.skin.box);
             _togglesBoxStyle.normal.background = GetTexture2D(new Color32(30, 30, 30, 255), _togglesBoxStyle);
             _togglesBoxStyle.normal.textColor = Color.white;
+        }
+
+        if (_multiSelectStyle is null)
+        {
+            _multiSelectStyle = new(GUI.skin.label);
+            _multiSelectStyle.normal.background = GetTexture2D(new Color32(60, 100, 160, 255), _multiSelectStyle);
+            _multiSelectStyle.normal.textColor = Color.white;
+            _multiSelectStyle.padding = new RectOffset(4, 4, 2, 2);
         }
 
         using var scroll = new EditorGUILayout.ScrollViewScope(_windowScrollPosition);
@@ -110,24 +130,25 @@ internal sealed class CreateAvatarPreset : EditorWindow
                     EditorGUILayout.EndVertical();
                 }
 
-                bool canRegisterPreset = _avatarRootObject;
+                bool canRegisterPreset = _avatarRootObject && !_isProcessing;
 
-                EditorGUI.BeginDisabledGroup(!canRegisterPreset);
-                using (new EditorGUILayout.HorizontalScope())
+                using (new EditorGUI.DisabledGroupScope(!canRegisterPreset))
                 {
-                    GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Save As Preset", GUILayout.Height(24), GUILayout.MaxWidth(200)))
+                    using (new EditorGUILayout.HorizontalScope())
                     {
-                        createFolder(PRESET_PATH);
+                        GUILayout.FlexibleSpace();
+                        if (GUILayout.Button("Save As Preset", GUILayout.Height(24), GUILayout.MaxWidth(200)))
+                        {
+                            createFolder(PRESET_PATH);
 
-                        PrefabUtility.SaveAsPrefabAsset(
-                            _avatarRootObject.gameObject,
-                            $"{PRESET_PATH}{(_presetName == string.Empty ? _avatarRootObject.gameObject.name : _presetName)}.prefab");
+                            PrefabUtility.SaveAsPrefabAsset(
+                                _avatarRootObject.gameObject,
+                                $"{PRESET_PATH}{(_presetName == string.Empty ? _avatarRootObject.gameObject.name : _presetName)}.prefab");
 
-                        Debug.Log($"[CreateAvatarPreset] Preset saved: '{_avatarRootObject.gameObject.name}'.");
+                            Debug.Log($"[CreateAvatarPreset] Preset saved: '{_avatarRootObject.gameObject.name}'.");
+                        }
                     }
                 }
-                EditorGUI.EndDisabledGroup();
             }
         }
         EditorGUILayout.EndFoldoutHeaderGroup();
@@ -187,66 +208,77 @@ internal sealed class CreateAvatarPreset : EditorWindow
                             }
                         }
 
-                        bool canCreateAvatar = _selectedAvatar;
+                        bool canCreateAvatar = _selectedAvatar && !_isProcessing;
 
                         EditorGUILayout.Space();
-                        EditorGUI.BeginDisabledGroup(!canCreateAvatar);
-                        using (new EditorGUILayout.HorizontalScope())
+                        using (new EditorGUI.DisabledGroupScope(!canCreateAvatar))
                         {
-                            GUILayout.FlexibleSpace();
-                            if (GUILayout.Button("Create Avatar Assets", GUILayout.Height(26), GUILayout.MaxWidth(200)))
+                            using (new EditorGUILayout.HorizontalScope())
                             {
-                                // 선택된 프리셋 프리팹을 새로운 아바타 전용 폴더로 복사하고,
-                                // 복제된 프리셋과 그 의존성들을 모두 새 리소스로 연결
-                                string sourceAvatarPath = AssetDatabase.GetAssetPath(_selectedAvatar.gameObject);
-                                if (string.IsNullOrEmpty(sourceAvatarPath))
+                                GUILayout.FlexibleSpace();
+                                if (GUILayout.Button("Create Avatar Assets", GUILayout.Height(26), GUILayout.MaxWidth(200)))
                                 {
-                                    Debug.LogError("[CreateAvatarPreset] Selected preset does not have a valid asset path.");
-                                }
-                                else
-                                {
-                                    string newAvatarPath = $"{CREATED_AVATAR_PATH}{_selectedAvatar.gameObject.name}/";
-                                    createFolder(CREATED_AVATAR_PATH);
-                                    createFolder(newAvatarPath);
-
-                                    string newPrefabPath = AssetDatabase.GenerateUniqueAssetPath(
-                                        $"{newAvatarPath}{_selectedAvatar.gameObject.name}.prefab");
-
-                                    if (!AssetDatabase.CopyAsset(sourceAvatarPath, newPrefabPath))
+                                    // 선택된 프리셋 프리팹을 새로운 아바타 전용 폴더로 복사하고,
+                                    // 복제된 프리셋과 그 의존성들을 모두 새 리소스로 연결
+                                    string sourceAvatarPath = AssetDatabase.GetAssetPath(_selectedAvatar.gameObject);
+                                    if (string.IsNullOrEmpty(sourceAvatarPath))
                                     {
-                                        Debug.LogError($"[CreateAvatarPreset] Failed to copy avatar prefab from '{sourceAvatarPath}' to '{newPrefabPath}'.");
+                                        Debug.LogError("[CreateAvatarPreset] Selected preset does not have a valid asset path.");
                                     }
                                     else
                                     {
-                                        AssetDatabase.ImportAsset(newPrefabPath);
-                                        GameObject newAvatarPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(newPrefabPath);
+                                        string newAvatarPath = $"{CREATED_AVATAR_PATH}{_selectedAvatar.gameObject.name}/";
+                                        createFolder(CREATED_AVATAR_PATH);
+                                        createFolder(newAvatarPath);
 
-                                        if (!newAvatarPrefab)
+                                        string newPrefabPath = AssetDatabase.GenerateUniqueAssetPath(
+                                            $"{newAvatarPath}{_selectedAvatar.gameObject.name}.prefab");
+
+                                        if (!AssetDatabase.CopyAsset(sourceAvatarPath, newPrefabPath))
                                         {
-                                            Debug.LogError($"[CreateAvatarPreset] Failed to load new avatar prefab at '{newPrefabPath}'.");
+                                            Debug.LogError($"[CreateAvatarPreset] Failed to copy avatar prefab from '{sourceAvatarPath}' to '{newPrefabPath}'.");
                                         }
                                         else
                                         {
-                                            VRCAvatarDescriptor newAvatarAsset = newAvatarPrefab.GetComponent<VRCAvatarDescriptor>();
-                                            if (!newAvatarAsset)
+                                            AssetDatabase.ImportAsset(newPrefabPath);
+                                            GameObject newAvatarPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(newPrefabPath);
+
+                                            if (!newAvatarPrefab)
                                             {
-                                                Debug.LogError($"[CreateAvatarPreset] No VRCAvatarDescriptor found on prefab at '{newPrefabPath}'.");
+                                                Debug.LogError($"[CreateAvatarPreset] Failed to load new avatar prefab at '{newPrefabPath}'.");
                                             }
                                             else
                                             {
-                                                    // 아바타 프리셋이 참조하는 모든 에셋 의존성을 통합된 흐름으로 복제하고,
-                                                // 새 아바타 및 관련 에셋들의 참조를 모두 복제본으로 재연결
-                                                cloneAdditionalDependenciesForAvatar(newAvatarAsset, newAvatarPath);
-
-                                                Debug.Log($"[CreateAvatarPreset] ✓ Avatar created: '{_selectedAvatar.gameObject.name}' at '{newAvatarPath}'");
-                                                EditorGUIUtility.PingObject(newAvatarPrefab);
+                                                VRCAvatarDescriptor newAvatarAsset = newAvatarPrefab.GetComponent<VRCAvatarDescriptor>();
+                                                if (!newAvatarAsset)
+                                                {
+                                                    Debug.LogError($"[CreateAvatarPreset] No VRCAvatarDescriptor found on prefab at '{newPrefabPath}'.");
+                                                }
+                                                else
+                                                {
+                                                        // 아바타 프리셋이 참조하는 모든 에셋 의존성을 통합된 흐름으로 복제하고,
+                                                    // 새 아바타 및 관련 에셋들의 참조를 모두 복제본으로 재연결
+                                                    _isProcessing = true;
+                                                    
+                                                    try
+                                                    {
+                                                        EditorUtility.DisplayProgressBar("Create Avatar Assets", "준비 중...", 0f);
+                                                        cloneAdditionalDependenciesForAvatar(newAvatarAsset, newAvatarPath);
+                                                        Debug.Log($"[CreateAvatarPreset] ✓ Avatar created: '{_selectedAvatar.gameObject.name}' at '{newAvatarPath}'");
+                                                        EditorGUIUtility.PingObject(newAvatarPrefab);
+                                                    }
+                                                    finally
+                                                    {
+                                                        EditorUtility.ClearProgressBar();
+                                                        _isProcessing = false;
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                        EditorGUI.EndDisabledGroup();
                     }
 
                     GUILayout.Space(10);
@@ -285,6 +317,9 @@ internal sealed class CreateAvatarPreset : EditorWindow
     // (사용자가 제외하지 않은 에셋만) 새 아바타 및 관련 에셋들이 해당 복제본을 참조하도록 재연결한다.
     private void cloneAdditionalDependenciesForAvatar(VRCAvatarDescriptor avatar, string newAvatarPath)
     {
+        // 파이프라인 시스템 초기화
+        AssetClonePipelineManager.Initialize();
+        
         // 원본 에셋 경로 -> 복제된 에셋 인스턴스
         var clonedMap = new Dictionary<string, Object>();
 
@@ -297,31 +332,41 @@ internal sealed class CreateAvatarPreset : EditorWindow
         if (!string.IsNullOrEmpty(sourceAvatarPath))
         {
             string[] dependencies = AssetDatabase.GetDependencies(sourceAvatarPath, true);
-
+            
+            // 복제 대상 에셋 필터링
+            var targetDependencies = new List<string>();
             foreach (string depPath in dependencies)
             {
                 if (string.IsNullOrEmpty(depPath)) continue;
+                if (!_includeBuiltInAndPackages && !depPath.StartsWith("Assets/")) continue;
+                
+                Object depAsset = AssetDatabase.LoadMainAssetAtPath(depPath);
+                if (!depAsset) continue;
+                if (depAsset is Shader || depAsset is MonoScript) continue;
+                if (!TryGetDependencyType(depAsset, out _)) continue;
+                if (_ignoredDependencyPaths.Contains(depPath)) continue;
+                
+                targetDependencies.Add(depPath);
+            }
 
-                // Built-in 에셋이나 Packages 폴더의 에셋은 토글이 꺼져있으면 복제하지 않는다
-                if (!_includeBuiltInAndPackages && !depPath.StartsWith("Assets/"))
-                {
-                    continue;
-                }
+            int totalSteps = targetDependencies.Count + 3; // 복제 + 재연결 + Prefab처리 + 저장
+            int currentStep = 0;
+
+            foreach (string depPath in targetDependencies)
+            {
+                currentStep++;
+                float progress = (float)currentStep / totalSteps;
+                EditorUtility.DisplayProgressBar(
+                    "Create Avatar Assets", 
+                    $"에셋 복제 중... ({currentStep}/{targetDependencies.Count})", 
+                    progress);
+
+                if (clonedMap.ContainsKey(depPath)) continue;
 
                 Object depAsset = AssetDatabase.LoadMainAssetAtPath(depPath);
                 if (!depAsset) continue;
 
-                // Shader나 코드 에셋(MonoScript)은 복제하지 않는다
-                if (depAsset is Shader) continue;
-                if (depAsset is MonoScript) continue;
-
-                // 의존성 타입 분류 (지원하지 않는 타입은 스킵)
-                if (!TryGetDependencyType(depAsset, out DependencyType depType)) continue;
-
-                // 사용자가 제외한 에셋은 복제하지 않는다
-                if (_ignoredDependencyPaths.Contains(depPath)) continue;
-
-                if (clonedMap.ContainsKey(depPath)) continue;
+                TryGetDependencyType(depAsset, out DependencyType depType);
 
                 Object cloned = cloneAssetForAvatar(depAsset, newAvatarPath);
                 if (!cloned) continue;
@@ -338,6 +383,12 @@ internal sealed class CreateAvatarPreset : EditorWindow
             // 복제 통계 요약 출력
             var statsStr = string.Join(", ", cloneStats.Select(s => $"{s.Key}: {s.Value}"));
             Debug.Log($"[CreateAvatarPreset] Cloned {clonedMap.Count} assets ({statsStr})");
+
+            // 재연결 단계
+            EditorUtility.DisplayProgressBar(
+                "Create Avatar Assets", 
+                "참조 재연결 중...", 
+                (float)(targetDependencies.Count + 1) / totalSteps);
         }
 
         // 2) 아바타 전용 폴더 내의 모든 에셋에서, 외부 에셋 참조를 복제본으로 재연결
@@ -519,6 +570,8 @@ internal sealed class CreateAvatarPreset : EditorWindow
             }
 
             // Prefab 저장
+            EditorUtility.DisplayProgressBar("Create Avatar Assets", "프리팹 저장 중...", 0.9f);
+            
             if (prefabModified)
             {
                 PrefabUtility.SaveAsPrefabAsset(prefabContents, avatarPrefabPath);
@@ -527,6 +580,7 @@ internal sealed class CreateAvatarPreset : EditorWindow
             PrefabUtility.UnloadPrefabContents(prefabContents);
         }
 
+        EditorUtility.DisplayProgressBar("Create Avatar Assets", "완료 중...", 0.95f);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
     }
@@ -647,40 +701,23 @@ internal sealed class CreateAvatarPreset : EditorWindow
         return false;
     }
 
-    // SerializedObject를 통해 ObjectReference 타입 필드들을 순회하면서,
-    // clonedMap(원본 경로 -> 복제본)에 등록된 경우 복제된 에셋으로 치환해 준다.
+    /// <summary>
+    /// 파이프라인 시스템을 통해 에셋의 참조를 재연결합니다.
+    /// IAssetClonePipeline을 구현한 커스텀 파이프라인이 있으면 해당 파이프라인이 사용됩니다.
+    /// </summary>
+    /// <param name="target">재연결할 에셋</param>
+    /// <param name="clonedMap">원본 경로 -> 복제된 에셋 매핑</param>
     private void remapObjectReferences(Object target, Dictionary<string, Object> clonedMap)
     {
         if (!target) return;
 
-        // AnimatorController는 특별 처리
-        if (target is AnimatorController animController)
+        // 파이프라인 매니저를 통해 처리 시도
+        if (AssetClonePipelineManager.TryRemap(target, clonedMap))
         {
-            RemapAnimatorController(animController, clonedMap);
-            return;
+            return; // 파이프라인에서 처리됨
         }
 
-        // AnimatorOverrideController도 특별 처리
-        if (target is AnimatorOverrideController overrideController)
-        {
-            RemapAnimatorOverrideController(overrideController, clonedMap);
-            return;
-        }
-
-        // Material도 특별 처리 (Texture 참조)
-        if (target is Material material)
-        {
-            RemapMaterial(material, clonedMap);
-            return;
-        }
-
-        // VRCExpressionsMenu도 특별 처리 (서브메뉴 참조)
-        if (target is VRCExpressionsMenu expressionsMenu)
-        {
-            RemapExpressionsMenu(expressionsMenu, clonedMap);
-            return;
-        }
-
+        // 파이프라인이 없는 경우 기본 SerializedObject 방식으로 처리
         SerializedObject so = new(target);
         SerializedProperty iterator = so.GetIterator();
         bool enterChildren = true;
@@ -713,259 +750,14 @@ internal sealed class CreateAvatarPreset : EditorWindow
         }
     }
 
-    // AnimatorController의 레퍼런스를 재연결
-    private void RemapAnimatorController(AnimatorController controller, Dictionary<string, Object> clonedMap)
-    {
-        if (!controller) return;
-
-        bool modified = false;
-
-        // 각 레이어의 상태머신을 순회
-        foreach (var layer in controller.layers)
-        {
-            if (layer.avatarMask)
-            {
-                string maskPath = AssetDatabase.GetAssetPath(layer.avatarMask);
-                if (!string.IsNullOrEmpty(maskPath) && clonedMap.TryGetValue(maskPath, out Object clonedMask))
-                {
-                    layer.avatarMask = clonedMask as AvatarMask;
-                    modified = true;
-                }
-            }
-
-            modified |= RemapStateMachine(layer.stateMachine, clonedMap);
-        }
-
-        if (modified)
-        {
-            EditorUtility.SetDirty(controller);
-            AssetDatabase.SaveAssetIfDirty(controller);
-        }
-    }
-
-    // StateMachine과 State들의 레퍼런스를 재연결
-    private bool RemapStateMachine(AnimatorStateMachine stateMachine, Dictionary<string, Object> clonedMap)
-    {
-        if (!stateMachine) return false;
-
-        bool modified = false;
-
-        // 모든 State의 Motion을 체크
-        foreach (var state in stateMachine.states)
-        {
-            if (state.state.motion)
-            {
-                string motionPath = AssetDatabase.GetAssetPath(state.state.motion);
-                if (!string.IsNullOrEmpty(motionPath) && clonedMap.TryGetValue(motionPath, out Object clonedMotion))
-                {
-                    state.state.motion = clonedMotion as Motion;
-                    modified = true;
-                }
-            }
-
-            // BlendTree인 경우 내부 애니메이션도 체크
-            if (state.state.motion is BlendTree blendTree)
-            {
-                modified |= RemapBlendTree(blendTree, clonedMap);
-            }
-        }
-
-        // 하위 StateMachine도 재귀적으로 처리
-        foreach (var subStateMachine in stateMachine.stateMachines)
-        {
-            modified |= RemapStateMachine(subStateMachine.stateMachine, clonedMap);
-        }
-
-        return modified;
-    }
-
-    // BlendTree의 레퍼런스를 재연결
-    private bool RemapBlendTree(BlendTree blendTree, Dictionary<string, Object> clonedMap)
-    {
-        if (!blendTree) return false;
-
-        bool modified = false;
-        var children = blendTree.children;
-
-        for (int i = 0; i < children.Length; i++)
-        {
-            var child = children[i];
-
-            if (child.motion)
-            {
-                string motionPath = AssetDatabase.GetAssetPath(child.motion);
-                if (!string.IsNullOrEmpty(motionPath) && clonedMap.TryGetValue(motionPath, out Object clonedMotion))
-                {
-                    child.motion = clonedMotion as Motion;
-                    children[i] = child;
-                    modified = true;
-                }
-            }
-
-            // 중첩된 BlendTree
-            if (child.motion is BlendTree childBlendTree)
-            {
-                modified |= RemapBlendTree(childBlendTree, clonedMap);
-            }
-        }
-
-        if (modified)
-        {
-            blendTree.children = children;
-        }
-
-        return modified;
-    }
-
-    // AnimatorOverrideController의 레퍼런스를 재연결
-    private void RemapAnimatorOverrideController(AnimatorOverrideController overrideController, Dictionary<string, Object> clonedMap)
-    {
-        if (!overrideController) return;
-
-        bool modified = false;
-
-        // Runtime Controller 재연결
-        if (overrideController.runtimeAnimatorController)
-        {
-            string controllerPath = AssetDatabase.GetAssetPath(overrideController.runtimeAnimatorController);
-            if (!string.IsNullOrEmpty(controllerPath) && clonedMap.TryGetValue(controllerPath, out Object clonedController))
-            {
-                overrideController.runtimeAnimatorController = clonedController as RuntimeAnimatorController;
-                modified = true;
-            }
-        }
-
-        // Override된 애니메이션 클립들 재연결
-        var overrides = new List<KeyValuePair<AnimationClip, AnimationClip>>();
-        overrideController.GetOverrides(overrides);
-
-        for (int i = 0; i < overrides.Count; i++)
-        {
-            var pair = overrides[i];
-            if (pair.Value)
-            {
-                string clipPath = AssetDatabase.GetAssetPath(pair.Value);
-                if (!string.IsNullOrEmpty(clipPath) && clonedMap.TryGetValue(clipPath, out Object clonedClip))
-                {
-                    overrides[i] = new KeyValuePair<AnimationClip, AnimationClip>(pair.Key, clonedClip as AnimationClip);
-                    modified = true;
-                }
-            }
-        }
-
-        if (modified)
-        {
-            overrideController.ApplyOverrides(overrides);
-            EditorUtility.SetDirty(overrideController);
-            AssetDatabase.SaveAssetIfDirty(overrideController);
-        }
-    }
-
-    // Material의 Texture 레퍼런스를 재연결
-    private void RemapMaterial(Material material, Dictionary<string, Object> clonedMap)
-    {
-        if (!material) return;
-
-        bool modified = false;
-        Shader shader = material.shader;
-
-        // 모든 Texture 프로퍼티를 순회
-        for (int i = 0; i < ShaderUtil.GetPropertyCount(shader); i++)
-        {
-            if (ShaderUtil.GetPropertyType(shader, i) == ShaderUtil.ShaderPropertyType.TexEnv)
-            {
-                string propertyName = ShaderUtil.GetPropertyName(shader, i);
-                Texture texture = material.GetTexture(propertyName);
-
-                if (texture)
-                {
-                    string texturePath = AssetDatabase.GetAssetPath(texture);
-                    if (!string.IsNullOrEmpty(texturePath) && clonedMap.TryGetValue(texturePath, out Object clonedTexture))
-                    {
-                        material.SetTexture(propertyName, clonedTexture as Texture);
-                        modified = true;
-                    }
-                }
-            }
-        }
-
-        if (modified)
-        {
-            EditorUtility.SetDirty(material);
-            AssetDatabase.SaveAssetIfDirty(material);
-        }
-    }
-
-    // VRCExpressionsMenu의 모든 ObjectReference를 재연결 (Iterator 방식)
-    private void RemapExpressionsMenu(VRCExpressionsMenu menu, Dictionary<string, Object> clonedMap)
-    {
-        if (!menu) return;
-
-        SerializedObject menuSO = new SerializedObject(menu);
-        bool modified = false;
-
-        // 복제된 VRCExpressionParameters 찾기
-        VRCExpressionParameters clonedParameters = null;
-        foreach (var pair in clonedMap)
-        {
-            if (pair.Value is VRCExpressionParameters param)
-            {
-                clonedParameters = param;
-                break;
-            }
-        }
-
-        // Next(true)를 사용하여 숨겨진 필드까지 모두 순회
-        SerializedProperty iterator = menuSO.GetIterator();
-        bool enterChildren = true;
-        
-        while (iterator.Next(enterChildren))
-        {
-            enterChildren = true;
-            
-            if (iterator.propertyType != SerializedPropertyType.ObjectReference) continue;
-            
-            Object originalRef = iterator.objectReferenceValue;
-            
-            // Parameters 필드가 None인 경우에도 복제된 Parameters로 설정
-            if (originalRef == null)
-            {
-                // 필드 타입이 VRCExpressionParameters인 경우 복제된 것으로 설정
-                if (clonedParameters != null && 
-                    (iterator.name.Contains("arameter") || iterator.type.Contains("VRCExpressionParameters")))
-                {
-                    iterator.objectReferenceValue = clonedParameters;
-                    modified = true;
-                    Debug.Log($"[CreateAvatarPreset] Set Parameters field '{iterator.name}' to cloned VRCExpressionParameters");
-                }
-                continue;
-            }
-
-            string originalPath = AssetDatabase.GetAssetPath(originalRef);
-            if (string.IsNullOrEmpty(originalPath)) continue;
-
-            if (clonedMap.TryGetValue(originalPath, out Object cloned))
-            {
-                iterator.objectReferenceValue = cloned;
-                modified = true;
-            }
-        }
-
-        if (modified)
-        {
-            menuSO.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(menu);
-            AssetDatabase.SaveAssetIfDirty(menu);
-        }
-    }
-
     // 의존성 제외 GUI
     private void DrawDependencyExclusionGUI()
     {
+        using (new EditorGUI.DisabledGroupScope(_isProcessing))
         using (new EditorGUILayout.VerticalScope(GUI.skin.box))
         {
             EditorGUILayout.LabelField("Dependency Filters", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("프리셋이 참조하는 에셋 중 복제에서 제외할 타입과 에셋을 선택합니다.\n제외된 에셋은 원본을 그대로 참조합니다.", MessageType.None);
+            EditorGUILayout.HelpBox("프리셋이 참조하는 에셋 중 복제에서 제외할 타입과 에셋을 선택합니다.\n제외된 에셋은 원본을 그대로 참조합니다.\n\n[다중 선택] Ctrl+클릭: 개별 선택 / Shift+클릭: 범위 선택", MessageType.None);
 
             // Built-in / Packages 에셋 포함 토글
             bool prevIncludeBuiltIn = _includeBuiltInAndPackages;
@@ -977,13 +769,21 @@ internal sealed class CreateAvatarPreset : EditorWindow
             if (prevIncludeBuiltIn != _includeBuiltInAndPackages)
             {
                 BuildDependencyCacheForSelectedAvatar();
+                _multiSelectedPaths.Clear();
+                _lastClickedIndex = -1;
             }
 
             EditorGUILayout.Space(4);
 
             using (new EditorGUILayout.HorizontalScope())
             {
+                var prevType = _selectedDependencyType;
                 _selectedDependencyType = (DependencyType)EditorGUILayout.EnumPopup("Type", _selectedDependencyType);
+                if (prevType != _selectedDependencyType)
+                {
+                    _multiSelectedPaths.Clear();
+                    _lastClickedIndex = -1;
+                }
                 GUILayout.Space(8);
                 _dependencySearch = EditorGUILayout.TextField("Search", _dependencySearch);
             }
@@ -991,62 +791,179 @@ internal sealed class CreateAvatarPreset : EditorWindow
             if (!_dependencyPathsByType.TryGetValue(_selectedDependencyType, out List<string> paths) || paths.Count == 0)
             {
                 EditorGUILayout.LabelField("선택된 타입에 해당하는 에셋이 없습니다.");
-                    return;
+                return;
             }
 
             string searchLower = string.IsNullOrEmpty(_dependencySearch) ? null : _dependencySearch.ToLower();
-            int visibleCount = 0;
-
-            using (new EditorGUILayout.VerticalScope(_togglesBoxStyle ?? GUI.skin.box))
+            
+            // 필터링된 경로 목록 생성
+            _currentFilteredPaths.Clear();
+            foreach (string path in paths)
             {
-                using var scroll = new EditorGUILayout.ScrollViewScope(_dependencyScrollPosition);
-                _dependencyScrollPosition = scroll.scrollPosition;
+                Object asset = AssetDatabase.LoadMainAssetAtPath(path);
+                string name = asset ? asset.name : System.IO.Path.GetFileName(path);
 
-                foreach (string path in paths)
+                if (searchLower != null)
                 {
-                    Object asset = AssetDatabase.LoadMainAssetAtPath(path);
-                    string name = asset ? asset.name : System.IO.Path.GetFileName(path);
+                    string nameLower = name.ToLower();
+                    string pathLower = path.ToLower();
+                    if (!nameLower.Contains(searchLower) && !pathLower.Contains(searchLower))
+                        continue;
+                }
+                _currentFilteredPaths.Add(path);
+            }
 
-                    if (searchLower != null)
+            // 다중 선택 정보 표시
+            if (_multiSelectedPaths.Count > 0)
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField($"다중 선택: {_multiSelectedPaths.Count}개", EditorStyles.boldLabel);
+                    if (GUILayout.Button("선택 해제", GUILayout.Width(80)))
                     {
-                        string nameLower = name.ToLower();
-                        string pathLower = path.ToLower();
-                        if (!nameLower.Contains(searchLower) && !pathLower.Contains(searchLower))
-                            continue;
+                        _multiSelectedPaths.Clear();
+                        _lastClickedIndex = -1;
                     }
-
-                    visibleCount++;
-
-                    bool excluded = _ignoredDependencyPaths.Contains(path);
-
-                    bool newExcluded = EditorGUILayout.ToggleLeft(
-                        $"{name}  ({path})",
-                        excluded);
-
-                    if (newExcluded != excluded)
+                    if (GUILayout.Button("선택 항목 제외", GUILayout.Width(100)))
                     {
-                        if (newExcluded) _ignoredDependencyPaths.Add(path);
-                        else _ignoredDependencyPaths.Remove(path);
+                        foreach (string path in _multiSelectedPaths)
+                        {
+                            _ignoredDependencyPaths.Add(path);
+                        }
+                        _multiSelectedPaths.Clear();
+                        _lastClickedIndex = -1;
+                    }
+                    if (GUILayout.Button("선택 항목 포함", GUILayout.Width(100)))
+                    {
+                        foreach (string path in _multiSelectedPaths)
+                        {
+                            _ignoredDependencyPaths.Remove(path);
+                        }
+                        _multiSelectedPaths.Clear();
+                        _lastClickedIndex = -1;
                     }
                 }
             }
 
+            using (new EditorGUILayout.VerticalScope(_togglesBoxStyle ?? GUI.skin.box, GUILayout.Height(200)))
+            {
+                _dependencyScrollPosition = EditorGUILayout.BeginScrollView(_dependencyScrollPosition);
+
+                Event evt = Event.current;
+
+                for (int i = 0; i < _currentFilteredPaths.Count; i++)
+                {
+                    string path = _currentFilteredPaths[i];
+                    Object asset = AssetDatabase.LoadMainAssetAtPath(path);
+                    string name = asset ? asset.name : System.IO.Path.GetFileName(path);
+
+                    bool excluded = _ignoredDependencyPaths.Contains(path);
+                    bool isMultiSelected = _multiSelectedPaths.Contains(path);
+                    bool buttonClicked = false;
+                    bool newExcluded = excluded;
+
+                    // 하이라이트 배경
+                    Rect rowRect = EditorGUILayout.BeginHorizontal(GUILayout.Height(20));
+                    
+                    if (isMultiSelected && Event.current.type == EventType.Repaint)
+                    {
+                        EditorGUI.DrawRect(rowRect, new Color(0.3f, 0.5f, 0.8f, 0.4f));
+                    }
+
+                    // 제외 토글
+                    newExcluded = EditorGUILayout.Toggle(excluded, GUILayout.Width(18));
+                    
+                    // 에셋 아이콘
+                    Texture icon = asset ? AssetDatabase.GetCachedIcon(path) : null;
+                    if (icon)
+                    {
+                        GUILayout.Label(new GUIContent(icon), GUILayout.Width(18), GUILayout.Height(18));
+                    }
+                    else
+                    {
+                        GUILayout.Space(20);
+                    }
+                    
+                    // 라벨 (클릭 가능)
+                    GUIContent labelContent = new GUIContent($"{name}  ({path})");
+                    GUIStyle labelStyle = isMultiSelected ? _multiSelectStyle : EditorStyles.label;
+                    buttonClicked = GUILayout.Button(labelContent, labelStyle);
+
+                    EditorGUILayout.EndHorizontal();
+
+                    // 버튼 클릭 처리
+                    if (buttonClicked)
+                    {
+                        // Ctrl 키로 다중 선택
+                        if (evt.control)
+                        {
+                            if (isMultiSelected)
+                                _multiSelectedPaths.Remove(path);
+                            else
+                                _multiSelectedPaths.Add(path);
+                            _lastClickedIndex = i;
+                        }
+                        // Shift 키로 범위 선택
+                        else if (evt.shift && _lastClickedIndex >= 0)
+                        {
+                            int startIdx = Mathf.Min(_lastClickedIndex, i);
+                            int endIdx = Mathf.Max(_lastClickedIndex, i);
+                            
+                            for (int j = startIdx; j <= endIdx; j++)
+                            {
+                                if (j < _currentFilteredPaths.Count)
+                                    _multiSelectedPaths.Add(_currentFilteredPaths[j]);
+                            }
+                        }
+                        // 일반 클릭
+                        else
+                        {
+                            _multiSelectedPaths.Clear();
+                            _multiSelectedPaths.Add(path);
+                            _lastClickedIndex = i;
+                        }
+                    }
+
+                    // 토글 변경 처리
+                    if (newExcluded != excluded)
+                    {
+                        // 다중 선택된 항목이 있으면 모두 적용
+                        if (_multiSelectedPaths.Count > 0 && _multiSelectedPaths.Contains(path))
+                        {
+                            foreach (string selectedPath in _multiSelectedPaths)
+                            {
+                                if (newExcluded) _ignoredDependencyPaths.Add(selectedPath);
+                                else _ignoredDependencyPaths.Remove(selectedPath);
+                            }
+                        }
+                        else
+                        {
+                            if (newExcluded) _ignoredDependencyPaths.Add(path);
+                            else _ignoredDependencyPaths.Remove(path);
+                        }
+                    }
+                }
+
+                EditorGUILayout.EndScrollView();
+            }
+
             EditorGUILayout.Space(2);
-            EditorGUILayout.LabelField($"에셋 개수: {paths.Count} / 표시: {visibleCount}", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField($"에셋 개수: {paths.Count} / 표시: {_currentFilteredPaths.Count}", EditorStyles.miniLabel);
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("현재 타입 전체 제외"))
+                // 필터링된 항목만 제외/포함
+                if (GUILayout.Button($"표시된 {_currentFilteredPaths.Count}개 전체 제외"))
                 {
-                    foreach (string path in paths)
+                    foreach (string path in _currentFilteredPaths)
                     {
                         _ignoredDependencyPaths.Add(path);
                     }
                 }
 
-                if (GUILayout.Button("현재 타입 전체 포함"))
+                if (GUILayout.Button($"표시된 {_currentFilteredPaths.Count}개 전체 포함"))
                 {
-                    foreach (string path in paths)
+                    foreach (string path in _currentFilteredPaths)
                     {
                         _ignoredDependencyPaths.Remove(path);
                     }

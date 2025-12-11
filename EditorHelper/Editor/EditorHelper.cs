@@ -117,14 +117,22 @@ namespace NAKZI.EditorHelper
 
         public static Texture2D GetTexture2D(Color32 color, GUIStyle guiStyle)
         {
-            Color32[] pix = new Color32[guiStyle.border.horizontal * guiStyle.border.vertical];
+            // border가 0이면 최소 1x1 크기로 설정
+            int width = Mathf.Max(1, guiStyle.border.horizontal);
+            int height = Mathf.Max(1, guiStyle.border.vertical);
+            
+            // 너무 작으면 2x2로 설정 (안전을 위해)
+            if (width < 2) width = 2;
+            if (height < 2) height = 2;
+
+            Color32[] pix = new Color32[width * height];
 
             for (int i = 0; i < pix.Length; i++)
             {
                 pix[i] = color;
             }
 
-            Texture2D texture = new(guiStyle.border.horizontal, guiStyle.border.vertical);
+            Texture2D texture = new(width, height);
             texture.SetPixels32(pix);
             texture.Apply();
 

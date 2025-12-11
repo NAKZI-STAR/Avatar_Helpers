@@ -2,6 +2,31 @@
 
 이 프로젝트의 모든 주요 변경 사항이 이 파일에 기록됩니다.
 
+## [1.1.0] - 2024-12-11
+
+### 추가됨
+- **파이프라인 시스템**: 에셋 복제/재연결 로직의 확장성 개선
+  - `IAssetClonePipeline` 인터페이스로 커스텀 파이프라인 정의 가능
+  - `[AssetClonePipelineFor]` 어트리뷰트로 처리할 타입 지정
+  - `AssetClonePipelineManager`가 자동으로 파이프라인 등록 및 실행
+  - 우선순위 시스템으로 기존 파이프라인 오버라이드 가능
+  - 내장 파이프라인: AnimatorController, AnimatorOverrideController, Material, VRCExpressionsMenu, ScriptableObject
+
+- **다중 선택 기능**: Dependency Filters에서 에셋 다중 선택
+  - Ctrl+클릭: 개별 항목 선택/해제
+  - Shift+클릭: 범위 선택
+  - 선택된 항목 일괄 제외/포함 버튼
+
+- **진행 상태 표시**: Unity 네이티브 프로그레스 바로 복제/재연결 진행률 표시
+
+- **작업 중 버튼 비활성화**: 복제 작업 중 UI 버튼 자동 비활성화
+
+### 개선됨
+- 디버그 로그 간소화 (필수 정보와 에러만 출력)
+- 코드 구조 개선 및 모듈화
+
+---
+
 ## [1.0.1] - 2024-12-11
 
 ### 수정됨
