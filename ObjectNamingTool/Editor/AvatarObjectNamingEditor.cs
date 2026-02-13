@@ -20,6 +20,8 @@ internal sealed class AvatarNamingTool : EditorWindow
 
     private void OnGUI()
     {
+        _avatarRootObject = (GameObject)EditorGUILayout.ObjectField(_avatarRootObject, typeof(GameObject), true);
+
         EditorGUILayout.LabelField("1. Prefix / Suffix 추가", EditorStyles.boldLabel);
 
         using (new GUILayout.VerticalScope(GUI.skin.box))
