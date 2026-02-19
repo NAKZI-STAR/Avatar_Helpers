@@ -89,6 +89,13 @@ SkinnedMeshRenderer의 Anchor Override를 일괄 설정하는 도구입니다.
 
 **메뉴 위치**: `Nakzi Avatar Script > Object Naming Tool`
 
+### 4. Avatar Bone Retargetor
+의상 본 매칭/머지 도구
+
+- **의상 본 매칭/머지 기능**: 의상 본과 아바타 본 1대1 매칭/머지 기능
+- **접두사/접미사 제외 기능**: 사용자가 제외할 접두사/접미사 추가 기능
+- **Undo기능**: 안정성 보장
+
 ## 📋 요구 사항
 
 - Unity 2022.3 이상
