@@ -44,6 +44,7 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
             }
             found.blueprintId = blueprintId.Trim();
             Save(true);
+            LocalBlueprintAutoSynchronizer.ApplyAvatarId(avatarId);
         }
 
         public void RemoveBlueprintId(string avatarId)

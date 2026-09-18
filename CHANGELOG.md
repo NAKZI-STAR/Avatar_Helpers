@@ -2,6 +2,15 @@
 
 이 프로젝트의 모든 주요 변경 사항이 이 파일에 기록됩니다.
 
+## [1.3.3] - 2026-09-19
+
+### 변경됨
+
+- Scene 또는 Prefab Stage에 로컬 매핑이 존재하면 Blueprint ID를 PipelineManager에 즉시 자동 적용
+- 로컬 DB에 Blueprint ID를 저장한 직후 같은 Avatar ID를 가진 바인딩을 자동 동기화
+- 자동 동기화로 대체된 Inspector Apply, Manager Apply 및 Apply All 버튼 제거
+- Save, Clear Pipeline ID, Remove Local Mapping 등 나머지 관리 버튼은 유지
+
 ## [1.3.2] - 2026-09-19
 
 ### 수정됨
