@@ -33,7 +33,7 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
                         if (error != null) EditorGUILayout.HelpBox(error, MessageType.Warning);
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            if (GUILayout.Button("Apply")) BlueprintBindingService.Apply(binding, true);
+                            if (GUILayout.Button("Apply")) BlueprintBindingService.Apply(binding);
                             if (GUILayout.Button("Save")) BlueprintBindingService.SaveCurrent(binding);
                         }
                     }
@@ -41,7 +41,7 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
             }
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Apply All")) foreach (var b in bindings) BlueprintBindingService.Apply(b, true);
+                if (GUILayout.Button("Apply All")) foreach (var b in bindings) BlueprintBindingService.Apply(b);
                 if (GUILayout.Button("Save All")) foreach (var b in bindings) BlueprintBindingService.SaveCurrent(b);
                 if (GUILayout.Button("Clear All Pipeline IDs"))
                     foreach (var b in bindings)

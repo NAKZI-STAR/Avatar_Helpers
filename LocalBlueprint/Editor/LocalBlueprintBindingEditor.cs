@@ -25,11 +25,11 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
                 EditorGUILayout.HelpBox("현재 Scene에 동일한 Avatar ID가 있습니다.", MessageType.Error);
             if (!string.IsNullOrEmpty(pipelineId) && !BlueprintBindingService.IsValidBlueprintId(pipelineId))
                 EditorGUILayout.HelpBox("Pipeline Blueprint ID 형식이 올바르지 않습니다.", MessageType.Warning);
-            EditorGUILayout.HelpBox("Blueprint ID는 UserSettings에만 저장됩니다. 이 컴포넌트는 플레이 및 VRChat 빌드 대상에서 제거됩니다.", MessageType.Info);
+            EditorGUILayout.HelpBox("Blueprint ID는 UserSettings에만 저장됩니다. Apply와 VRChat 빌드 시 로컬 DB 값이 Pipeline 값을 덮어씁니다. 이 컴포넌트는 플레이 및 빌드 대상에서 제거됩니다.", MessageType.Info);
 
             using (new EditorGUI.DisabledScope(pipeline == null))
             {
-                if (GUILayout.Button("Apply Local Blueprint")) BlueprintBindingService.Apply(binding, true);
+                if (GUILayout.Button("Apply Local Blueprint")) BlueprintBindingService.Apply(binding);
                 if (GUILayout.Button("Save Current Blueprint")) BlueprintBindingService.SaveCurrent(binding);
                 if (GUILayout.Button("Clear Pipeline Blueprint"))
                     BlueprintBindingService.SetPipelineId(pipeline, string.Empty, "Clear Pipeline Blueprint ID");

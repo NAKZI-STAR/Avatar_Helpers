@@ -20,9 +20,7 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
                 }
                 else if (LocalBlueprintSettings.instance.TryGetBlueprintId(binding.AvatarId, out var local))
                 {
-                    if (string.IsNullOrWhiteSpace(pipeline.blueprintId)) pipeline.blueprintId = local;
-                    else if (pipeline.blueprintId != local)
-                        Debug.LogWarning($"[Local Blueprint] '{binding.name}'의 Local/Pipeline ID가 달라 자동 적용하지 않았습니다.", binding);
+                    pipeline.blueprintId = local;
                 }
                 Object.DestroyImmediate(binding);
             }

@@ -54,22 +54,11 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
             EditorUtility.SetDirty(pipeline);
         }
 
-        public static void Apply(LocalBlueprintBinding binding, bool allowMismatchDialog)
+        public static void Apply(LocalBlueprintBinding binding)
         {
             var pipeline = GetSinglePipeline(binding, out _);
             if (pipeline == null || !LocalBlueprintSettings.instance.TryGetBlueprintId(binding.AvatarId, out var local)) return;
-            if (string.IsNullOrWhiteSpace(pipeline.blueprintId) || pipeline.blueprintId == local)
-            {
-                SetPipelineId(pipeline, local, "Apply Local Blueprint ID");
-                return;
-            }
-            if (!allowMismatchDialog) return;
-            var choice = EditorUtility.DisplayDialogComplex("Blueprint ID 불일치",
-                $"Local Blueprint ID:\n{local}\n\nCurrent Pipeline Blueprint ID:\n{pipeline.blueprintId}\n\n사용할 값을 선택하세요.",
-                "Apply Local", "Cancel", "Save Current as Local");
-            if (choice == 0) SetPipelineId(pipeline, local, "Apply Local Blueprint ID");
-            else if (choice == 2 && IsValidBlueprintId(pipeline.blueprintId))
-                LocalBlueprintSettings.instance.SetBlueprintId(binding.AvatarId, pipeline.blueprintId);
+            SetPipelineId(pipeline, local, "Apply Local Blueprint ID");
         }
 
         public static void SaveCurrent(LocalBlueprintBinding binding)
