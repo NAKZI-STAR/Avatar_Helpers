@@ -2,6 +2,15 @@
 
 이 프로젝트의 모든 주요 변경 사항이 이 파일에 기록됩니다.
 
+## [1.3.4] - 2026-09-19
+
+### 변경됨
+
+- 컴포넌트 이름을 `LocalBlueprintBinding`에서 `LocalBlueprintBinder`로 변경하고 기존 직렬화 데이터 마이그레이션 정보 추가
+- VRChat SDK/Modular Avatar의 `IEditorOnly` 제거 단계와 중복되던 빌드 콜백의 수동 컴포넌트 제거 코드 삭제
+- 빌드 콜백은 로컬 Blueprint ID 적용만 담당하도록 단순화
+- Gesture Manager는 `IEditorOnly`를 제거하지 않으므로 일반 Play Mode 제거 로직은 유지
+
 ## [1.3.3] - 2026-09-19
 
 ### 변경됨

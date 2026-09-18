@@ -3,12 +3,12 @@ using UnityEngine;
 
 namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
 {
-    [CustomEditor(typeof(LocalBlueprintBinding))]
-    internal sealed class LocalBlueprintBindingEditor : UnityEditor.Editor
+    [CustomEditor(typeof(LocalBlueprintBinder))]
+    internal sealed class LocalBlueprintBinderEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
-            var binding = (LocalBlueprintBinding)target;
+            var binding = (LocalBlueprintBinder)target;
             EditorGUILayout.LabelField("Local Blueprint Binding", EditorStyles.boldLabel);
             using (new EditorGUI.DisabledScope(true))
                 EditorGUILayout.TextField("Avatar ID", binding.AvatarId);

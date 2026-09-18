@@ -10,7 +10,7 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
 
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
-            var bindings = avatarGameObject.GetComponentsInChildren<LocalBlueprintBinding>(true);
+            var bindings = avatarGameObject.GetComponentsInChildren<LocalBlueprintBinder>(true);
             foreach (var binding in bindings)
             {
                 var pipeline = BlueprintBindingService.GetSinglePipeline(binding, out var error);
@@ -22,7 +22,6 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
                 {
                     pipeline.blueprintId = local;
                 }
-                Object.DestroyImmediate(binding);
             }
             return true;
         }
@@ -36,7 +35,7 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
             EditorApplication.playModeStateChanged += state =>
             {
                 if (state != PlayModeStateChange.EnteredPlayMode) return;
-                foreach (var binding in Resources.FindObjectsOfTypeAll<LocalBlueprintBinding>())
+                foreach (var binding in Resources.FindObjectsOfTypeAll<LocalBlueprintBinder>())
                     if (binding != null && binding.gameObject.scene.IsValid()) Object.DestroyImmediate(binding);
             };
         }

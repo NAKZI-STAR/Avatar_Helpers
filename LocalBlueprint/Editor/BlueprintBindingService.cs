@@ -25,7 +25,7 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
             return localId == pipelineId ? BlueprintBindingStatus.Synced : BlueprintBindingStatus.Mismatch;
         }
 
-        public static PipelineManager GetSinglePipeline(LocalBlueprintBinding binding, out string error)
+        public static PipelineManager GetSinglePipeline(LocalBlueprintBinder binding, out string error)
         {
             error = null;
             var pipelines = binding.GetComponents<PipelineManager>();
@@ -36,14 +36,14 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
             return null;
         }
 
-        public static bool HasDuplicateId(LocalBlueprintBinding binding)
+        public static bool HasDuplicateId(LocalBlueprintBinder binding)
         {
             return FindSceneBindings().Any(other => other != binding && other.AvatarId == binding.AvatarId);
         }
 
-        public static IEnumerable<LocalBlueprintBinding> FindSceneBindings()
+        public static IEnumerable<LocalBlueprintBinder> FindSceneBindings()
         {
-            return Resources.FindObjectsOfTypeAll<LocalBlueprintBinding>()
+            return Resources.FindObjectsOfTypeAll<LocalBlueprintBinder>()
                 .Where(item => item != null && item.gameObject.scene.IsValid() && !EditorUtility.IsPersistent(item));
         }
 
@@ -54,14 +54,14 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
             EditorUtility.SetDirty(pipeline);
         }
 
-        public static void Apply(LocalBlueprintBinding binding)
+        public static void Apply(LocalBlueprintBinder binding)
         {
             var pipeline = GetSinglePipeline(binding, out _);
             if (pipeline == null || !LocalBlueprintSettings.instance.TryGetBlueprintId(binding.AvatarId, out var local)) return;
             SetPipelineId(pipeline, local, "Apply Local Blueprint ID");
         }
 
-        public static void SaveCurrent(LocalBlueprintBinding binding)
+        public static void SaveCurrent(LocalBlueprintBinder binding)
         {
             var pipeline = GetSinglePipeline(binding, out _);
             if (pipeline != null && IsValidBlueprintId(pipeline.blueprintId))

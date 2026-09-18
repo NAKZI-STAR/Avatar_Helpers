@@ -22,7 +22,7 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
                 {
                     using (new EditorGUILayout.VerticalScope("box"))
                     {
-                        EditorGUILayout.ObjectField(binding.name, binding, typeof(LocalBlueprintBinding), true);
+                        EditorGUILayout.ObjectField(binding.name, binding, typeof(LocalBlueprintBinder), true);
                         EditorGUILayout.SelectableLabel(binding.AvatarId, GUILayout.Height(EditorGUIUtility.singleLineHeight));
                         var pipeline = BlueprintBindingService.GetSinglePipeline(binding, out var error);
                         LocalBlueprintSettings.instance.TryGetBlueprintId(binding.AvatarId, out var local);
