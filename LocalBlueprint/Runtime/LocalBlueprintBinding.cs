@@ -1,11 +1,12 @@
 using System;
 using UnityEngine;
+using VRC.SDKBase;
 
 namespace Nakzi.AvatarHelper.LocalBlueprint
 {
     [DisallowMultipleComponent]
     [AddComponentMenu("Nakzi Avatar Helper/Local Blueprint Binding")]
-    public sealed class LocalBlueprintBinding : MonoBehaviour
+    public sealed class LocalBlueprintBinding : MonoBehaviour, IEditorOnly
     {
         [SerializeField, HideInInspector] private string avatarId;
 

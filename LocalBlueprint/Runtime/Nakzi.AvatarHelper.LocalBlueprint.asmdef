@@ -1,6 +1,8 @@
 {
   "name": "Nakzi.AvatarHelper.LocalBlueprint",
   "rootNamespace": "Nakzi.AvatarHelper.LocalBlueprint",
-  "references": [],
+  "references": [
+    "VRC.SDKBase"
+  ],
   "autoReferenced": true
 }
