@@ -46,6 +46,22 @@ VRChat 아바타 작업을 위한 유틸리티 도구 모음입니다.
 
 ## 🛠️ 기능
 
+### Local Blueprint Manager
+
+여러 작업자가 같은 Avatar Scene/Prefab을 공유할 때 VRChat Blueprint ID를 프로젝트 로컬로 분리합니다.
+
+- Avatar Root에 `LocalBlueprintBinding`을 추가하면 Git에 공유 가능한 고유 Avatar ID가 생성됩니다.
+- 실제 `avtr_...` 값은 `UserSettings/LocalBlueprintSettings.asset`에만 저장됩니다.
+- 관리 창: **Tools > VRChat > Local Blueprint Manager**
+- 바인딩 컴포넌트는 플레이 모드 및 VRChat Avatar 빌드 대상에서 자동 제거됩니다. 원본 Scene/Prefab에는 유지됩니다.
+- 안전을 위해 Local/Pipeline 값이 다르면 자동으로 덮어쓰지 않습니다.
+
+Unity 프로젝트 루트의 `.gitignore`에 다음 항목을 추가하세요(일반 Unity `.gitignore`의 `/[Uu]ser[Ss]ettings/`도 동일하게 보호합니다).
+
+```gitignore
+/UserSettings/LocalBlueprintSettings.asset
+```
+
 ### 1. Create Avatar Preset
 아바타 프리셋을 생성하고 관리하는 도구입니다.
 

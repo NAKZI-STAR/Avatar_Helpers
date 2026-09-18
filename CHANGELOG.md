@@ -2,6 +2,21 @@
 
 이 프로젝트의 모든 주요 변경 사항이 이 파일에 기록됩니다.
 
+## [1.3.0] - 2026-09-19
+
+### 추가됨
+
+- **Local Blueprint Manager**: 여러 작업자가 공유하는 Avatar의 Blueprint ID를 작업자별 로컬 설정으로 분리
+- Avatar별 영구 GUID와 `UserSettings/LocalBlueprintSettings.asset` 기반 로컬 매핑
+- 개별/일괄 Apply, Save, Clear 및 충돌 방지 UI
+- 중복 GUID, 누락/복수 PipelineManager, 잘못된 Blueprint ID 검증
+- VRChat Avatar 빌드 직전 빈 Pipeline ID 자동 적용
+- 플레이 모드와 VRChat 빌드 대상에서 `LocalBlueprintBinding` 컴포넌트 자동 제거
+
+### 문서화
+
+- 로컬 Blueprint 설정 파일의 Git 제외 방법과 사용 흐름 추가
+
 ## [1.2.1] - 2026-09-14
 
 ### 수정됨

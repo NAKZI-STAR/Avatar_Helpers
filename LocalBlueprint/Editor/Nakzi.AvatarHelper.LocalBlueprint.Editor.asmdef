@@ -1,0 +1,11 @@
+{
+  "name": "Nakzi.AvatarHelper.LocalBlueprint.Editor",
+  "rootNamespace": "Nakzi.AvatarHelper.LocalBlueprint.Editor",
+  "references": [
+    "Nakzi.AvatarHelper.LocalBlueprint",
+    "VRC.SDKBase",
+    "VRC.SDKBase.Editor"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}
