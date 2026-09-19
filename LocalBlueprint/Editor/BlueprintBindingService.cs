@@ -49,8 +49,12 @@ namespace Nakzi.AvatarHelper.LocalBlueprint.Editor
 
         public static void SetPipelineId(PipelineManager pipeline, string value, string undoName)
         {
+            var normalizedValue = value ?? string.Empty;
+            if (string.Equals(pipeline.blueprintId ?? string.Empty, normalizedValue, StringComparison.Ordinal))
+                return;
+
             Undo.RecordObject(pipeline, undoName);
-            pipeline.blueprintId = value ?? string.Empty;
+            pipeline.blueprintId = normalizedValue;
             EditorUtility.SetDirty(pipeline);
         }
 
